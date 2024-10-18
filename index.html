@@ -2,14 +2,14 @@
 <html lang="da">
 <head>
     <meta charset="UTF-8">
-    <title>Organisk Metallisk Væsen - Prøjserblå</title>
+    <title>Organisk Metallisk Væsen - Rød på Blå</title>
     <style>
         body, html {
             margin: 0;
             overflow: hidden;
             height: 100vh;
             width: 100vw;
-            background-color: black;
+            background-color: #00008B; /* Dyb blå baggrund */
         }
         canvas {
             display: block;
@@ -29,12 +29,12 @@
         document.body.appendChild(renderer.domElement);
 
         // Lys
-        const pointLight = new THREE.PointLight(0xffffff, 3); // Hvidt lys for bedre belysning af blå farve
+        const pointLight = new THREE.PointLight(0xffffff, 3); // Hvidt lys for god belysning
         pointLight.position.set(0, 0, 20);
         scene.add(pointLight);
 
-        // Materiale med prøjserblå farve
-        const armMaterial = new THREE.MeshStandardMaterial({ color: 0x003153, metalness: 1, roughness: 0.3 });
+        // Materiale med rød farve
+        const armMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, metalness: 1, roughness: 0.3 });
         const armGeometry = new THREE.CylinderGeometry(0.05, 0.3, 7, 64);
         const arms = [];
         const armCount = 80;
@@ -73,8 +73,8 @@
                     arm.scale.y = scale;
                     arm.rotation.x += 0.02 * (freq * 0.02);
                     arm.rotation.z += 0.03 * (freq * 0.01);
-                    // Justerer farven til prøjserblå i HSL
-                    arm.material.color.setHSL(0.61, 1, 0.3 + (freq / 255) * 0.7);
+                    // Justerer farven til rød i HSL
+                    arm.material.color.setHSL(0, 1, 0.5 + (freq / 255) * 0.5);
                 });
             }
             renderer.render(scene, camera);
