@@ -4,68 +4,41 @@
     <meta charset="UTF-8">
     <title>Organisk Metallisk Væsen</title>
     <style>
-        body, html {
-            margin: 0;
-            overflow: hidden;
-            height: 100%;
-            width: 100%;
-            background-color: black;
-        }
-        canvas {
-            display: block;
-        }
+        body, html { margin: 0; overflow: hidden; height: 100%; width: 100%; background-color: black; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
-    <!-- Three.js biblioteket -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Opsætning af scene, kamera og renderer
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Lys til metallisk effekt
-        const ambientLight = new THREE.AmbientLight(0x404040, 1);
-        scene.add(ambientLight);
-        const pointLight = new THREE.PointLight(0xff0000, 3);  // Intens rødt lys
+        const pointLight = new THREE.PointLight(0xff0000, 3);
         camera.add(pointLight);
         scene.add(camera);
 
-        // Metallisk materiale
-        const material = new THREE.MeshStandardMaterial({ color: 0xff0000, metalness: 1, roughness: 0.3 });
-
-        // Opretter det organiske væsen
-        const creature = new THREE.Group();
-
-        const sphereGeometry = new THREE.SphereGeometry(1.5, 64, 64);
-        const body = new THREE.Mesh(sphereGeometry, material);
-        creature.add(body);
-
-        // Tilføjer mange metalliske fangarme
+        const armMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, metalness: 1, roughness: 0.3 });
         const armGeometry = new THREE.CylinderGeometry(0.05, 0.3, 7, 16);
         const arms = [];
-        const armCount = 60;  // Øget antal fangarme
+        const armCount = 80; // Øget antal fangarme
 
         for (let i = 0; i < armCount; i++) {
-            const arm = new THREE.Mesh(armGeometry, material);
+            const arm = new THREE.Mesh(armGeometry, armMaterial);
             const angle = (i / armCount) * Math.PI * 2;
-            arm.position.set(Math.cos(angle) * 2, 0, Math.sin(angle) * 2);
+            arm.position.set(Math.cos(angle) * 3, 0, Math.sin(angle) * 3);
             arm.rotation.z = Math.PI / 2;
             arm.rotation.y = angle;
-            creature.add(arm);
+            scene.add(arm);
             arms.push(arm);
         }
 
-        scene.add(creature);
-        camera.position.z = 15;
+        camera.position.z = 20;
 
-        // Lydanalyse
-        let analyser;
-        let dataArray;
-
+        let analyser, dataArray;
         navigator.mediaDevices.getUserMedia({ audio: true, video: false })
             .then(function (stream) {
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -75,56 +48,34 @@
                 source.connect(analyser);
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
             })
-            .catch(function (err) {
-                console.log('Lydinput fejlede: ' + err);
-            });
+            .catch(err => console.log('Lydinput fejlede:', err));
 
-        // Animation
         function animate() {
             requestAnimationFrame(animate);
 
             if (analyser) {
                 analyser.getByteFrequencyData(dataArray);
-                const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
-
-                creature.rotation.y += 0.005;
-
-                arms.forEach((arm, index) => {
-                    const frequency = dataArray[index % dataArray.length];
-                    const scale = 1 + frequency * 0.01;
+                arms.forEach((arm, i) => {
+                    const freq = dataArray[i % dataArray.length];
+                    const scale = 1 + freq * 0.02;
                     arm.scale.y = scale;
-
-                    // Dynamisk rotation af fangarme for en mere flagren effekt
-                    arm.rotation.x = Math.sin(Date.now() * 0.002 + index) * 0.5 * (frequency * 0.01);
-                    arm.rotation.z = Math.cos(Date.now() * 0.002 + index) * 0.5 * (frequency * 0.01);
-
-                    // Skifter metallisk skinnende rødt baseret på lydfrekvens
-                    arm.material.color.setHSL(0, 1, 0.3 + (frequency / 255) * 0.7);
+                    arm.rotation.x += 0.02 * (freq * 0.02);
+                    arm.rotation.z += 0.03 * (freq * 0.01);
+                    arm.material.color.setHSL(0, 1, 0.5 + (freq / 255) * 0.5);
                 });
-
-                // Reagerer kraftigt på lyd med skalering af kroppen
-                const scaleBody = 1 + avg * 0.003;
-                body.scale.set(scaleBody, scaleBody, scaleBody);
             }
-
             renderer.render(scene, camera);
         }
         animate();
 
-        // Håndterer vinduesændring
-        window.addEventListener('resize', function () {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-            renderer.setSize(width, height);
-            camera.aspect = width / height;
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
         });
 
-        // Fuld skærm ved klik
-        document.addEventListener('click', function () {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            }
+        document.addEventListener('click', () => {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
         });
     </script>
 </body>
