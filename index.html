@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <title>Organisk Væsen</title>
+    <style>
+        body, html {
+            margin: 0;
+            overflow: hidden;
+            height: 100%;
+            width: 100%;
+            background-color: black;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Three.js biblioteket -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Opsætning af scene, kamera og renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Lys
+        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xffffff, 1);
+        camera.add(pointLight);
+        scene.add(camera);
+
+        // Opretter det organiske væsen
+        const creature = new THREE.Group();
+
+        const material = new THREE.MeshPhongMaterial({color: 0x00ff00, wireframe: false});
+        const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+        const body = new THREE.Mesh(sphereGeometry, material);
+        creature.add(body);
+
+        // Tilføjer fangarme
+        const armMaterial = new THREE.MeshPhongMaterial({color: 0xff0000, wireframe: false});
+        const armGeometry = new THREE.CylinderGeometry(0.05, 0.2, 5, 16);
+        const arms = [];
+
+        for(let i = 0; i < 30; i++) {
+            const arm = new THREE.Mesh(armGeometry, armMaterial);
+            const angle = (i / 30) * Math.PI * 2;
+            arm.position.set(Math.cos(angle) * 1.5, 0, Math.sin(angle) * 1.5);
+            arm.rotation.z = Math.PI / 2;
+            arm.rotation.y = angle;
+            creature.add(arm);
+            arms.push(arm);
+        }
+
+        scene.add(creature);
+        camera.position.z = 10;
+
+        // Lydanalyse
+        let analyser;
+        let dataArray;
+
+        navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+            .then(function(stream) {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+            })
+            .catch(function(err) {
+                console.log('Lydinput fejlede: ' + err);
+            });
+
+        // Animation
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (analyser) {
+                analyser.getByteFrequencyData(dataArray);
+                const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
+
+                creature.rotation.y += 0.005;
+
+                arms.forEach((arm, index) => {
+                    arm.scale.y = 1 + (avg * 0.005 * Math.sin(Date.now() * 0.001 + index));
+                });
+
+                body.scale.set(1 + avg * 0.002, 1 + avg * 0.002, 1 + avg * 0.002);
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Håndterer vinduesændring
+        window.addEventListener('resize', function() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        });
+
+        // Fuld skærm ved klik
+        document.addEventListener('click', function() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            }
+        });
+    </script>
+</body>
+</html>
