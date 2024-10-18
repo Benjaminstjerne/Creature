@@ -22,8 +22,8 @@
     <script>
         // Opsætning af scene, kamera og renderer
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({antialias: true});
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
@@ -37,20 +37,21 @@
         // Opretter det organiske væsen
         const creature = new THREE.Group();
 
-        const material = new THREE.MeshPhongMaterial({color: 0x00ff00, wireframe: false});
-        const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+        const material = new THREE.MeshPhongMaterial({ color: 0x00ff00, wireframe: false });
+        const sphereGeometry = new THREE.SphereGeometry(1.5, 64, 64);
         const body = new THREE.Mesh(sphereGeometry, material);
         creature.add(body);
 
-        // Tilføjer fangarme
-        const armMaterial = new THREE.MeshPhongMaterial({color: 0xff0000, wireframe: false});
-        const armGeometry = new THREE.CylinderGeometry(0.05, 0.2, 5, 16);
+        // Tilføjer flere og mere komplekse fangarme
+        const armMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, wireframe: false });
+        const armGeometry = new THREE.CylinderGeometry(0.05, 0.3, 7, 16);
         const arms = [];
+        const armCount = 60;  // Øget antal fangarme
 
-        for(let i = 0; i < 30; i++) {
+        for (let i = 0; i < armCount; i++) {
             const arm = new THREE.Mesh(armGeometry, armMaterial);
-            const angle = (i / 30) * Math.PI * 2;
-            arm.position.set(Math.cos(angle) * 1.5, 0, Math.sin(angle) * 1.5);
+            const angle = (i / armCount) * Math.PI * 2;
+            arm.position.set(Math.cos(angle) * 2, 0, Math.sin(angle) * 2);
             arm.rotation.z = Math.PI / 2;
             arm.rotation.y = angle;
             creature.add(arm);
@@ -58,14 +59,14 @@
         }
 
         scene.add(creature);
-        camera.position.z = 10;
+        camera.position.z = 15;
 
         // Lydanalyse
         let analyser;
         let dataArray;
 
         navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-            .then(function(stream) {
+            .then(function (stream) {
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 const source = audioContext.createMediaStreamSource(stream);
                 analyser = audioContext.createAnalyser();
@@ -73,7 +74,7 @@
                 source.connect(analyser);
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
             })
-            .catch(function(err) {
+            .catch(function (err) {
                 console.log('Lydinput fejlede: ' + err);
             });
 
@@ -88,10 +89,21 @@
                 creature.rotation.y += 0.005;
 
                 arms.forEach((arm, index) => {
-                    arm.scale.y = 1 + (avg * 0.005 * Math.sin(Date.now() * 0.001 + index));
+                    const frequency = dataArray[index % dataArray.length];
+                    const scale = 1 + frequency * 0.01;
+                    arm.scale.y = scale;
+
+                    // Dynamisk rotation af fangarme for en mere flagren effekt
+                    arm.rotation.x = Math.sin(Date.now() * 0.002 + index) * 0.5 * (frequency * 0.01);
+                    arm.rotation.z = Math.cos(Date.now() * 0.002 + index) * 0.5 * (frequency * 0.01);
+
+                    // Skifter farve baseret på lydfrekvensen
+                    arm.material.color.setHSL(frequency / 255, 1, 0.5);
                 });
 
-                body.scale.set(1 + avg * 0.002, 1 + avg * 0.002, 1 + avg * 0.002);
+                // Reagerer mere kraftigt på lyd med skalering af kroppen
+                const scaleBody = 1 + avg * 0.003;
+                body.scale.set(scaleBody, scaleBody, scaleBody);
             }
 
             renderer.render(scene, camera);
@@ -99,7 +111,7 @@
         animate();
 
         // Håndterer vinduesændring
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', function () {
             const width = window.innerWidth;
             const height = window.innerHeight;
             renderer.setSize(width, height);
@@ -108,7 +120,7 @@
         });
 
         // Fuld skærm ved klik
-        document.addEventListener('click', function() {
+        document.addEventListener('click', function () {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen();
             }
