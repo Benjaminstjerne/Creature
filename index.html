@@ -2,7 +2,7 @@
 <html lang="da">
 <head>
     <meta charset="UTF-8">
-    <title>Organisk Væsen</title>
+    <title>Organisk Metallisk Væsen</title>
     <style>
         body, html {
             margin: 0;
@@ -27,29 +27,30 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Lys
-        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        // Lys til metallisk effekt
+        const ambientLight = new THREE.AmbientLight(0x404040, 1);
         scene.add(ambientLight);
-        const pointLight = new THREE.PointLight(0xffffff, 1);
+        const pointLight = new THREE.PointLight(0xff0000, 3);  // Intens rødt lys
         camera.add(pointLight);
         scene.add(camera);
+
+        // Metallisk materiale
+        const material = new THREE.MeshStandardMaterial({ color: 0xff0000, metalness: 1, roughness: 0.3 });
 
         // Opretter det organiske væsen
         const creature = new THREE.Group();
 
-        const material = new THREE.MeshPhongMaterial({ color: 0x00ff00, wireframe: false });
         const sphereGeometry = new THREE.SphereGeometry(1.5, 64, 64);
         const body = new THREE.Mesh(sphereGeometry, material);
         creature.add(body);
 
-        // Tilføjer flere og mere komplekse fangarme
-        const armMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, wireframe: false });
+        // Tilføjer mange metalliske fangarme
         const armGeometry = new THREE.CylinderGeometry(0.05, 0.3, 7, 16);
         const arms = [];
         const armCount = 60;  // Øget antal fangarme
 
         for (let i = 0; i < armCount; i++) {
-            const arm = new THREE.Mesh(armGeometry, armMaterial);
+            const arm = new THREE.Mesh(armGeometry, material);
             const angle = (i / armCount) * Math.PI * 2;
             arm.position.set(Math.cos(angle) * 2, 0, Math.sin(angle) * 2);
             arm.rotation.z = Math.PI / 2;
@@ -97,11 +98,11 @@
                     arm.rotation.x = Math.sin(Date.now() * 0.002 + index) * 0.5 * (frequency * 0.01);
                     arm.rotation.z = Math.cos(Date.now() * 0.002 + index) * 0.5 * (frequency * 0.01);
 
-                    // Skifter farve baseret på lydfrekvensen
-                    arm.material.color.setHSL(frequency / 255, 1, 0.5);
+                    // Skifter metallisk skinnende rødt baseret på lydfrekvens
+                    arm.material.color.setHSL(0, 1, 0.3 + (frequency / 255) * 0.7);
                 });
 
-                // Reagerer mere kraftigt på lyd med skalering af kroppen
+                // Reagerer kraftigt på lyd med skalering af kroppen
                 const scaleBody = 1 + avg * 0.003;
                 body.scale.set(scaleBody, scaleBody, scaleBody);
             }
